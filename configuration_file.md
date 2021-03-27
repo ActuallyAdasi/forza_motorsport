@@ -2,7 +2,7 @@ The data out format in Forza Motorsport 7 contains a wide variety of parameters.
 
 This document describes how to write that configuration file, and gives a list of all the data that can be logged. I've also created an example configuration file with a short list of parameters in `example_configuration.yaml`.
 
-The configuration file needs to be written in a language called YAML. It is not a very complicated language, and the configuration file is a text file, meaning it can be edited with common text editors like Notepad on Windows and TextEdit on Mac OS.
+The configuration file needs to be written in a language called YAML. It is not a very complicated language, and the configuration file is a text file, meaning it can be edited with common text editors like Notepad on Windows and TextEdit on Mac OS. See https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html for more info on YAML syntax.
 
 In the case of `data2file.py`, the configuration file will consist of either lines looking like `key: value` that specify an option and it's value, or the list of parameters. We will cover the latter in more detail below.
 
@@ -19,6 +19,8 @@ The configuration file can override all the command line options. They are as fo
   * Example: `append: False`
 * `packet_format`: The format of the data packets. Either `sled`, the older format, or `dash`, the newer format.
   * Example: `packet_format: dash`
+* `log_level`: log level to write. See https://docs.python.org/3/library/logging.html#levels for a complete list of valid levels.
+  * Example: `log_level: DEBUG`
 
 The example configuration file sets all of these options and can be used as a starting point for creating your own configuration file.
 

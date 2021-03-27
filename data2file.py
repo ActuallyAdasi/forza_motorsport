@@ -29,25 +29,16 @@ import csv
 import logging
 import socket
 
-import yaml
 import datetime as dt
 
 from fdp import ForzaDataPacket
+from helpers import cli_parser, config_parser
 
-def to_str(value):
-    '''
-    Returns a string representation of the given value, if it's a floating
-    number, format it.
+LOG = logging.getLogger(__name__)
 
-    :param value: the value to format
-    '''
-    if isinstance(value, float):
-        return('{:f}'.format(value))
 
-    return('{}'.format(value))
-
-def dump_stream(port, output_filename, format='tsv',
-                append=False, packet_format='dash', config_file = None):
+def dump_stream(port=None, output_filename=None, output_format='tsv',
+                append=False, packet_format='dash', log_level=logging.INFO, config_file=None):
     '''
     Opens the given output filename, listens to UDP packets on the given port
     and writes data to the file.
@@ -58,8 +49,8 @@ def dump_stream(port, output_filename, format='tsv',
     :param output_filename: path to the file we will write to
     :type output_filename: str
 
-    :param format: what format to write out, either 'tsv' or 'csv'
-    :type format: str
+    :param output_format: what output_format to write out, either 'tsv' or 'csv'
+    :type output_format: str
 
     :param append: if set, the output file will be opened for appending and
                    the header with column names is not written out
@@ -69,127 +60,125 @@ def dump_stream(port, output_filename, format='tsv',
                           'sled' or 'dash'
     :type packet_format str
 
+    :param log_level: the log level to use, see https://docs.python.org/3/library/logging.html#levels
+    :type log_level str
+
     :param config_file: path to the YAML configuration file
     :type config_file: str
     '''
+    LOG.info("Dumping stream...")
+    params = None
+    LOG.setLevel(log_level)
 
     if config_file:
-        import yaml
-        with open(config_file) as f:
-            config = yaml.safe_load(f)
+        LOG.info(f'Checking configuration file for parameters and overrides...')
+        config = config_parser.get_dict_config_file(config_file, log_level)
 
+        # TODO: refactor this spaghetti code elsewhere
         ## The configuration can override everything
         if 'port' in config:
             port = config['port']
+            LOG.info(f"set port to {port}")
 
         if 'output_filename' in config:
             output_filename = config['output_filename']
+            LOG.info(f"set output_filename to {output_filename}")
 
-        if 'format' in config:
-            format = config['format']
+        if 'output_format' in config:
+            output_format = config['output_format']
+            LOG.info(f"set output_format to {output_format}")
 
         if 'append' in config:
             append = config['append']
+            LOG.info(f"set append to {append}")
 
         if 'packet_format' in config:
             packet_format = config['packet_format']
+            LOG.info(f"set packet_format to {packet_format}")
 
-    params = ForzaDataPacket.get_props(packet_format = packet_format)
-    if config_file and 'parameter_list' in config:
-        params = config['parameter_list']
+        if 'log_level' in config:
+            log_level = config['log_level']
+            LOG.setLevel(log_level)
+            LOG.info(f"set log_level to {log_level}")
 
+        if 'parameter_list' in config:
+            params = config['parameter_list']
+            LOG.info(f"set parameter_list to {params}")
+
+        LOG.info(f'Done checking configuration file for parameters and overrides.')
+
+    if not port or not output_filename:
+        raise Exception(f"ERROR: could not determine port and output filename from CLI or config file!")
+
+    if not params:
+        LOG.info(f"did not find parameter list in configuration file. Using all properties")
+        params = ForzaDataPacket.get_all_props(packet_format = packet_format)
+
+    # TODO: refactor log_wall_clock, it seems unnecessary
     log_wall_clock = False
     if 'wall_clock' in params:
         log_wall_clock = True
 
-    open_mode = 'w'
-    if append:
-        open_mode = 'a'
+    open_mode = ['w', 'a'][append]
 
     with open(output_filename, open_mode, buffering=1) as outfile:
-        if format == 'csv':
+        # TODO: refactor the following two blocks as well, they seem awkward
+        if output_format == 'csv':
             csv_writer = csv.writer(outfile)
             if not append:
                 csv_writer.writerow(params)
 
         ## If we're not appending, add a header row:
-        if format == 'tsv' and not append:
+        if output_format == 'tsv' and not append:
             outfile.write('\t'.join(params))
             outfile.write('\n')
-                
+
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_socket.bind(('', port))
 
-        logging.info('listening on port {}'.format(port))
+        LOG.info(f'listening on port {port}')
 
         n_packets = 0
-        
-        while True:
-            message, address = server_socket.recvfrom(1024)
-            fdp = ForzaDataPacket(message, packet_format = packet_format)
-            if log_wall_clock:
-                fdp.wall_clock = dt.datetime.now()
 
-            if fdp.is_race_on:
+        # TODO: run this in a separate thread, and grant another thread the power to start and stop this loop
+        # TODO: profile the performance of this loop
+        # TODO: move this into a tick function
+        while True:
+            message, _ = server_socket.recvfrom(1024)
+            fdp = ForzaDataPacket(message, packet_format = packet_format)
+            tick_time = dt.datetime.now()
+            if log_wall_clock:
+                fdp.wall_clock = tick_time
+            LOG.DEBUG(f'tick: {tick_time}')
+
+            # TODO: refactor this if/else block
+            if fdp.__getattribute__('is_race_on'):
                 if n_packets == 0:
-                    logging.info('{}: in race, logging data'.format(dt.datetime.now()))
-                
-                if format == 'csv':
+                    LOG.info(f'{dt.datetime.now()}: in race, logging data')
+
+                if output_format == 'csv':
                     csv_writer.writerow(fdp.to_list(params))
                 else:
-                    outfile.write('\t'.join([to_str(v) \
-                                             for v in fdp.to_list(params)]))
-                    outfile.write('\n')
+                    outfile.write('\t'.join([f'{v}' for v in fdp.to_list(params)]) + '\n')
 
                 n_packets += 1
                 if n_packets % 60 == 0:
-                    logging.info('{}: logged {} packets'.format(dt.datetime.now(), n_packets))
+                    LOG.info(f'{dt.datetime.now()}: logged {n_packets} packets')
             else:
                 if n_packets > 0:
-                    logging.info('{}: out of race, stopped logging data'.format(dt.datetime.now()))
+                    LOG.info(f'{dt.datetime.now()}: out of race, stopped logging data')
                 n_packets = 0
 
+
 def main():
-    import argparse
-
-    cli_parser = argparse.ArgumentParser(
-        description="script that grabs data from a Forza Motorsport stream and dumps it to a TSV file"
-    )
-
-    # Verbosity option
-    cli_parser.add_argument('-v', '--verbose', action='store_true',
-                            help='write informational output')
-
-    cli_parser.add_argument('-a', '--append', action='store_true',
-                            default=False, help='if set, data will be appended to the given file')
-
-    cli_parser.add_argument('-f', '--format', type=str, default='tsv',
-                            choices=['tsv', 'csv'],
-                            help='what format to write out, "tsv" means tab-separated, "csv" comma-separated; default is "tsv"')
-
-    cli_parser.add_argument('-p', '--packet_format', type=str, default='dash',
-                            choices=['sled', 'dash', 'fh4'],
-                            help='what format the packets coming from the game is, either "sled" or "dash"')
-
-    cli_parser.add_argument('-c', '--config_file', type=str,
-                            help='path to the YAML configuration file')
-
-    cli_parser.add_argument('port', type=int,
-                            help='port number to listen on')
-
-    cli_parser.add_argument('output_filename', type=str,
-                            help='path to the TSV file we will output')
-
-    args = cli_parser.parse_args()
-
-    if args.verbose:
-        logging.basicConfig(level=logging.INFO)
-
-    dump_stream(args.port, args.output_filename, args.format, args.append,
-                args.packet_format, args.config_file)
-
+    LOG.info(f"Hanging out in my pants")
+    args = cli_parser.get_arguments_from_cli()
+    LOG.info(f"set args from CLI: {args}")
+    dump_stream(args.port, args.output_filename, args.output_format, args.append,
+                args.packet_format, args.log_level, args.config_file)
+    LOG.info(f"DONE!")
     return()
+
 
 if __name__ == "__main__":
     main()
-    

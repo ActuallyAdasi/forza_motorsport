@@ -1,0 +1,12 @@
+port: 4843
+output_filename: test_output.csv
+format: csv
+append: True
+packet_format: fh4
+log_level: DEBUG
+parameter_list:
+  - wall_clock
+  - timestamp_ms
+  - lap_no
+  - cur_lap_time
+  - cur_race_time

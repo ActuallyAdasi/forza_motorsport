@@ -89,6 +89,7 @@ class ForzaDataPacket:
         
         ## zip makes for convenient flexibility when mapping names to
         ## values in the data packet:
+        ## NOTE: adasi on Mar 27, 2021: This is hella hacky, and now we have nice typing in python. we should fix this.
         if packet_format == 'sled':
             for prop_name, prop_value in zip(self.sled_props,
                                              unpack(self.sled_format, data)):
@@ -105,7 +106,7 @@ class ForzaDataPacket:
                 setattr(self, prop_name, prop_value)
 
     @classmethod
-    def get_props(cls, packet_format = 'dash'):
+    def get_all_props(cls, packet_format = 'dash'):
         '''
         Return the list of properties in the data packet, in order.
 
