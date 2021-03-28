@@ -35,7 +35,7 @@ import datetime as dt
 from fdp import ForzaDataPacket
 from helpers import cli_parser, config_parser
 
-logging.basicConfig(filename=f'data2file-{dt.date.now().date()}.log', level=logging.INFO)
+logging.basicConfig(filename=f'data2file-{dt.datetime.now().date()}.log', level=logging.INFO)
 LOG = logging.getLogger(__name__)
 console_log_handler = logging.StreamHandler(sys.stdout)
 console_log_handler.setLevel(logging.INFO)
