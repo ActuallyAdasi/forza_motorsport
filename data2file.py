@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+import sys
 import csv
 import logging
 import socket
@@ -69,6 +70,12 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
     LOG.info("Dumping stream...")
     params = None
     LOG.setLevel(log_level)
+
+    console_log_handler = logging.StreamHandler(sys.stdout)
+    console_log_handler.setLevel(log_level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_log_handler.setFormatter(formatter)
+    LOG.addHandler(console_log_handler)
 
     if config_file:
         LOG.info(f'Checking configuration file for parameters and overrides...')

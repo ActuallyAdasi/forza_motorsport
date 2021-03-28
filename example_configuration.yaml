@@ -1,6 +1,6 @@
-port: 1123
-output_filename: forza_data.csv
-format: csv
+port: 4843
+output_filename: forza_data.tsv
+format: tsv
 append: False
 packet_format: dash
 parameter_list:

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+echo "starting data2file with example_configuration ..."
+python3 data2file.py -c example_configuration.yaml "$@"
+echo "done running data2file"

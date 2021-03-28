@@ -1,6 +1,6 @@
 port: 4843
-output_filename: test_output.csv
-format: csv
+output_filename: test_output.tsv
+format: tsv
 append: True
 packet_format: fh4
 log_level: DEBUG
