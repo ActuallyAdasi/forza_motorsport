@@ -35,7 +35,13 @@ import datetime as dt
 from fdp import ForzaDataPacket
 from helpers import cli_parser, config_parser
 
+logging.basicConfig(filename=f'{__name__}-{dt.datetime.now()}.log', level=logging.INFO)
 LOG = logging.getLogger(__name__)
+console_log_handler = logging.StreamHandler(sys.stdout)
+console_log_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_log_handler.setFormatter(formatter)
+LOG.addHandler(console_log_handler)
 
 
 def dump_stream(port=None, output_filename=None, output_format='tsv',
@@ -70,12 +76,7 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
     LOG.info("Dumping stream...")
     params = None
     LOG.setLevel(log_level)
-
-    console_log_handler = logging.StreamHandler(sys.stdout)
     console_log_handler.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_log_handler.setFormatter(formatter)
-    LOG.addHandler(console_log_handler)
 
     if config_file:
         LOG.info(f'Checking configuration file for parameters and overrides...')
@@ -106,6 +107,7 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
         if 'log_level' in config:
             log_level = config['log_level']
             LOG.setLevel(log_level)
+            console_log_handler.setLevel(log_level)
             LOG.info(f"set log_level to {log_level}")
 
         if 'parameter_list' in config:
@@ -136,6 +138,7 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
                 csv_writer.writerow(params)
 
         ## If we're not appending, add a header row:
+        # TODO: consider scenario where we are appending, but the list of parameters changes
         if output_format == 'tsv' and not append:
             outfile.write('\t'.join(params))
             outfile.write('\n')
