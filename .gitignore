@@ -16,3 +16,4 @@ __pycache__/
 # output files
 *.csv
 *.tsv
+*.log
