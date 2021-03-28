@@ -35,11 +35,12 @@ import datetime as dt
 from fdp import ForzaDataPacket
 from helpers import cli_parser, config_parser
 
-logging.basicConfig(filename=f'data2file-{dt.datetime.now().date()}.log', level=logging.INFO)
+logging.basicConfig(filename=f'data2file-{dt.datetime.now().date()}.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:%(lineno)s:\t%(message)s')
 LOG = logging.getLogger(__name__)
 console_log_handler = logging.StreamHandler(sys.stdout)
 console_log_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 console_log_handler.setFormatter(formatter)
 LOG.addHandler(console_log_handler)
 
@@ -181,6 +182,9 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
 
 
 def main():
+    LOG.info(f"-------------------------------------------------------------------------------------------------------")
+    LOG.info(f"starting data2file.py at {dt.datetime.now()}")
+    LOG.info(f"-------------------------------------------------------------------------------------------------------")
     args = cli_parser.get_arguments_from_cli()
     LOG.info(f"set args from CLI: {args}")
     dump_stream(args.port, args.output_filename, args.output_format, args.append,
