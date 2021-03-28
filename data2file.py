@@ -35,12 +35,15 @@ import datetime as dt
 from fdp import ForzaDataPacket
 from helpers import cli_parser, config_parser
 
+
+LOG_FORMAT = '%(asctime)-23s:%(levelname)-8s:%(filename)-16s:%(lineno)03d:\t%(message)s'
+
 logging.basicConfig(filename=f'data2file-{dt.datetime.now().date()}.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:%(lineno)s:\t%(message)s')
+                    format=LOG_FORMAT)
 LOG = logging.getLogger(__name__)
 console_log_handler = logging.StreamHandler(sys.stdout)
 console_log_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+formatter = logging.Formatter(LOG_FORMAT)
 console_log_handler.setFormatter(formatter)
 LOG.addHandler(console_log_handler)
 
