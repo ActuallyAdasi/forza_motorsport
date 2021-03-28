@@ -181,7 +181,6 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
 
 
 def main():
-    LOG.info(f"Hanging out in my pants")
     args = cli_parser.get_arguments_from_cli()
     LOG.info(f"set args from CLI: {args}")
     dump_stream(args.port, args.output_filename, args.output_format, args.append,
