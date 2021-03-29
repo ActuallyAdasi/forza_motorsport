@@ -36,7 +36,7 @@ from fdp import ForzaDataPacket
 from helpers import cli_parser, config_parser
 
 
-LOG_FORMAT = '%(asctime)-23s:%(levelname)-8s:%(filename)-16s:%(lineno)03d:\t%(message)s'
+LOG_FORMAT = '%(asctime)-23s:%(levelname)-8s:%(filename)-18s:%(lineno)03d:\t%(message)s'
 
 logging.basicConfig(filename=f'data2file-{dt.datetime.now().date()}.log', level=logging.INFO,
                     format=LOG_FORMAT)
