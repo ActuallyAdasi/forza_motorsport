@@ -157,13 +157,17 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
         # TODO: run this in a separate thread, and grant another thread the power to start and stop this loop
         # TODO: profile the performance of this loop
         # TODO: move this into a tick function
+        previous_tick_time = None
+        current_tick_time = None
         while True:
+            current_tick_time = dt.datetime.now()
+            if previous_tick_time:
+                delta_millisecond = (current_tick_time.microsecond - previous_tick_time.microsecond)/1000
+                LOG.debug(f'tick duration ms: {delta_millisecond}, FPS: {1000/delta_millisecond}')
             message, _ = server_socket.recvfrom(1024)
             fdp = ForzaDataPacket(message, packet_format = packet_format)
-            tick_time = dt.datetime.now()
             if log_wall_clock:
-                fdp.wall_clock = tick_time
-            LOG.DEBUG(f'tick: {tick_time}')
+                fdp.wall_clock = current_tick_time
 
             # TODO: refactor this if/else block
             if fdp.__getattribute__('is_race_on'):
@@ -182,6 +186,7 @@ def dump_stream(port=None, output_filename=None, output_format='tsv',
                 if n_packets > 0:
                     LOG.info(f'{dt.datetime.now()}: out of race, stopped logging data')
                 n_packets = 0
+            previous_tick_time = current_tick_time
 
 
 def main():
